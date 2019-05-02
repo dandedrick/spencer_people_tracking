@@ -100,7 +100,8 @@ void GeometryUtils::convertDetectedPersonsToObservations(const spencer_tracking_
     {
         // Heuristic sanity check for detected person poses (if anything in the detector goes wrong or groundtruth annotations are invalid)
         if(!posePassesSanityCheck(detectedPerson.pose, false)) {
-            ROS_WARN_STREAM("Pose of DetectedPerson " << detectedPerson.detection_id << " does not pass sanity check, will ignore this detection: " << detectedPerson.pose.pose);
+            ROS_WARN_STREAM_THROTTLE(1.0, "Pose of DetectedPerson " << detectedPerson.detection_id << " does not pass sanity check, will ignore this detection");
+            ROS_DEBUG_STREAM("Invalid pose:" << detectedPerson.pose.pose);
             continue;
         }
 
@@ -252,7 +253,7 @@ bool GeometryUtils::posePassesSanityCheck(const geometry_msgs::PoseWithCovarianc
     float positionValues[] = { pose.position.x, pose.position.y, pose.position.z };
     for(size_t i = 0; i < sizeof(positionValues) / sizeof(positionValues[0]); i++) {
         if(!isfinite(positionValues[i]) || abs(positionValues[i]) > MAX_REASONABLE_DISTANCE_FROM_ORIGIN) {
-            ROS_WARN("Suspicious coordinate value(s) in pose position encountered!");
+            ROS_WARN_THROTTLE(1.0, "Suspicious coordinate value(s) in pose position encountered!");
             return false;
         }
     }
@@ -263,14 +264,14 @@ bool GeometryUtils::posePassesSanityCheck(const geometry_msgs::PoseWithCovarianc
         float orientationValues[] = { pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w };
         for(size_t i = 0; i < sizeof(orientationValues) / sizeof(orientationValues[0]); i++) {
             if(!isfinite(orientationValues[i])) {
-                ROS_WARN("Non-finite pose orientation value(s) encountered!");
+                ROS_WARN_THROTTLE(1.0, "Non-finite pose orientation value(s) encountered!");
                 return false;
             }
             squaredSum += orientationValues[i] * orientationValues[i];
         }
 
         if(abs(squaredSum - 1.0) > 0.05) {
-            ROS_WARN("Pose orientation quaternion is not a unit quaternion!");
+            ROS_WARN_THROTTLE(1.0, "Pose orientation quaternion is not a unit quaternion!");
             return false;
         }
     }
@@ -284,7 +285,7 @@ bool GeometryUtils::posePassesSanityCheck(const geometry_msgs::PoseWithCovarianc
     Eigen::Vector2cd eigenvals = cov.eigenvalues();
     bool positiveSemiDefinite = eigenvals(0).real() > 0 && eigenvals(1).real() > 0;
     if(!positiveSemiDefinite) {
-        ROS_WARN_STREAM("Pose covariance matrix X,Y part is not positive semi-definite: " << std::endl << cov);
+        ROS_WARN_STREAM_THROTTLE(1.0, "Pose covariance matrix X,Y part is not positive semi-definite: " << std::endl << cov);
         return false;
     }
 
